@@ -96,6 +96,7 @@ public class ClientHandler implements Runnable
         this.debug = debug;
         // [2025-08-07] Initialize the map here, referencing the dedicated method.
         specialCommands.put("/suspend", this::handleSuspendCommand);
+        specialCommands.put("/channels.m3u", this::handleM3uRequest);
         // [2025-08-07] Add more special commands here later, e.g., for reboot or hibernate.
     }
 
@@ -195,6 +196,40 @@ public class ClientHandler implements Runnable
         {
             System.err.println("[" + getTimestamp() + "]: Error handling /suspend command: " + e.getMessage());
             sendErrorResponse(out, "500 Internal Server Error", "<h1>500 Internal Server Error</h1><p>Error processing command.</p>");
+        }
+    }
+
+    /**
+     * [2025-09-07] Handles the special request for a filtered M3U playlist.
+     *
+     * @param out The output stream to write the response to.
+     * @throws IOException If an I/O error occurs.
+     */
+    private void handleM3uRequest(OutputStream out) throws IOException
+    {
+        if (this.debug)
+        {
+            System.out.println("[" + getTimestamp() + "]: Received special command: /channels.m3u");
+        }
+
+        M3UProcessor processor = new M3UProcessor();
+        String filteredM3u = processor.process(appConfig.m3uRemoteUrl());
+
+        if (filteredM3u != null && !filteredM3u.isEmpty())
+        {
+            byte[] bodyBytes = filteredM3u.getBytes(StandardCharsets.UTF_8);
+            String headers = "HTTP/1.1 200 OK\r\n" +
+                    "Content-Type: audio/x-mpegurl; charset=UTF-8\r\n" +
+                    "Content-Length: " + bodyBytes.length + "\r\n" +
+                    "Connection: close\r\n" +
+                    "\r\n";
+            out.write(headers.getBytes(StandardCharsets.UTF_8));
+            out.write(bodyBytes);
+            out.flush();
+        }
+        else
+        {
+            sendErrorResponse(out, "500 Internal Server Error", "<h1>500 Internal Server Error</h1><p>Failed to process M3U playlist.</p>");
         }
     }
 

@@ -13,7 +13,7 @@ public class JayWeb
     private static final boolean DEBUG = false;
 
     // Record to hold application configuration properties
-    public static record Config(String appName, String version, int port, String baseDir)
+    public static record Config(String appName, String version, int port, String baseDir, String m3uRemoteUrl)
     {
         // No explicit body needed for a simple record with canonical constructor
     }
@@ -72,8 +72,9 @@ public class JayWeb
             String version = properties.getProperty("version", "1.0");
             int port = Integer.parseInt(properties.getProperty("port", "8080"));
             String baseDir = properties.getProperty("baseDir", "."); // Current directory as default
+            String m3uRemoteUrl = properties.getProperty("m3u.remote.url", "");
 
-            appConfig = new Config(appName, version, port, baseDir);
+            appConfig = new Config(appName, version, port, baseDir, m3uRemoteUrl);
         }
         catch (IOException ex)
         {
